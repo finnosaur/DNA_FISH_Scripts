@@ -1,9 +1,11 @@
-%% Primer appender
+%% Primer appender 
+% Finn Clark, Lionnet Lab, 3/22/2024
 % -depends on MATLAB informatics toolbox
-% -requires user to specify desired seqs to append inside of deconvotluion
-% primers (ie RT site and T7 promoter)
+% -appends primers to homology region of DNA FISH probes
+% -output is outerFwd_RTprimer_probeSeq_T7seq_outerRev
 
-probe_path = "G:\Finn\20240130_HLB_probe_order\2024-02-07-PaintSHOP-full-probe-file.xlsx";
+%path to your patin shop probe file
+probe_path = "E:\2023-01-18-PaintSHOP-full-probe-file.txt";
 
 % table containing your probe set names and sequences
 my_probes = readtable(probe_path);
@@ -14,7 +16,8 @@ proj_dir = fileparts(probe_path);
 % each set (NOTE these are primer sequences, so the rev primer will be rev
 % complemented before being appended to your probe sequence)
 ps = readtable("G:\Finn\20240130_HLB_probe_order\primer_optimization_v2\subramanian12primerPairs.tsv", 'FileType','text');
-
+% 
+% these are the inner primer sequecnes we use for IVT and RT
 fivepr_rt_seq = 'CGTGGTCGCGTCTCA'; 
 
 threepr_t7_seq = 'CCCTATAGTGAGTCGTATTA';
@@ -23,17 +26,52 @@ threepr_t7_seq = 'CCCTATAGTGAGTCGTATTA';
 %% get unique targets
 targets = unique(my_probes.target);
 
-% boetigger appraoch
-% ps_fwd_primers = string(ps_fwd.seq);
-% 
-% ps_rev_primers = string(ps_rev.seq);
-
+% we must extract teh columns for fwd and rev deconvoluti nprimers (outer
+% primers)
 ps_fwd_primers = string(ps.seqSfwd);
 
 ps_rev_primers = string(ps.seqSrev);
 
 %% plot probe locations (must be on same chromosome!)
 
+% please name your probe set(s) and give chromosome name
+% all probe sets in your file must be for on chromosome
+myTitle = 'HLB Probe probe Feiyue';
+myChr = '2L';
+
+% n bins for ur histogram
+nBins = 20;
+
+figure
+set_size = zeros(size(targets));
+for i = 1:numel(targets)
+
+    cur_target = targets{i};
+
+    mask = string(my_probes.target) == cur_target;
+
+    disp(targets{i})
+    
+    % subset our table for current target
+    cur_set_t = my_probes(mask, :);
+    
+    histogram(cur_set_t.start, nBins)
+    
+    alpha(0.5)
+    hold on
+
+    set_size(i) = numel(cur_set_t.start);
+
+end
+
+title(strcat(myTitle ,'-hist'))
+xlabel(strcat(myChr, ' (bp)'))
+ylabel('n')
+legend(strcat(string(targets), '--(n=', string(set_size), ')'), "Interpreter","none", "Location","bestoutside")
+
+savefig(fullfile(proj_dir, strcat(myTitle, '_hist.fig')))
+
+%%
 figure
 set_size = zeros(size(targets));
 for i = 1:numel(targets)
@@ -54,13 +92,13 @@ for i = 1:numel(targets)
     set_size(i) = numel(cur_set_t.start);
 
 end
-title('HLB Probeset Alignment')
-xlabel('chr 6 (bp)')
+title(myTitle)
+xlabel(strcat(myChr, ' (bp)'))
 ylabel('logical')
 legend(strcat(string(targets), '--(n=', string(set_size), ')'), "Interpreter","none", "Location","bestoutside")
 
 
-savefig(fullfile(proj_dir, 'HLB_probe_alignment.fig'))
+savefig(fullfile(proj_dir, strcat(myTitle, '_scatter.fig')))
 %% loop thru sets and append
 
 collect_tables = {}; 
@@ -123,10 +161,11 @@ end
 
 %% save
 
-
-
-
 save_name = fullfile(proj_dir, strcat( string(datetime('today')), 'full_probe_table_appended.csv') );
 
 writetable(output_table, save_name, "Delimiter", ",")
 
+disp('~~~~~~')
+disp('Table and plots saved to ')
+disp(proj_dir)
+disp('~~~~~')
