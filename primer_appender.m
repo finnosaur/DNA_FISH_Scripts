@@ -1,19 +1,18 @@
 %% Primer appender
 % -depends on MATLAB informatics toolbox
-% -requires user to designate path to files of primer sequences downloaded
-% from balliveau github
 % -requires user to specify desired seqs to append inside of deconvotluion
 % primers (ie RT site and T7 promoter)
 
+probe_path = "G:\Finn\20240130_HLB_probe_order\2024-02-07-PaintSHOP-full-probe-file.xlsx";
 
-my_probes = readtable("G:\Finn\20240130_HLB_probe_order\2024-02-07-PaintSHOP-full-probe-file.xlsx");
-% 
-% using boetigger
-% ps_fwd = readtable("G:\Finn\20240130_HLB_probe_order\ps_if.tsv", "FileType", 'text');
-% 
-% ps_rev = readtable("G:\Finn\20240130_HLB_probe_order\ps_ir.tsv" ,"FileType", 'text');
+% table containing your probe set names and sequences
+my_probes = readtable(probe_path);
 
-% using Tims 
+proj_dir = fileparts(probe_path);
+
+% table containing the fwd and rev primers that will be used to deconvolve
+% each set (NOTE these are primer sequences, so the rev primer will be rev
+% complemented before being appended to your probe sequence)
 ps = readtable("G:\Finn\20240130_HLB_probe_order\primer_optimization_v2\subramanian12primerPairs.tsv", 'FileType','text');
 
 fivepr_rt_seq = 'CGTGGTCGCGTCTCA'; 
@@ -61,7 +60,7 @@ ylabel('logical')
 legend(strcat(string(targets), '--(n=', string(set_size), ')'), "Interpreter","none", "Location","bestoutside")
 
 
-savefig(fullfile(pwd, 'HLB_probe_alignment.fig'))
+savefig(fullfile(proj_dir, 'HLB_probe_alignment.fig'))
 %% loop thru sets and append
 
 collect_tables = {}; 
@@ -105,8 +104,8 @@ for i = 1:numel(targets)
     
     disp(i)
     disp('Probe set:' + string(targets{i}))
-    disp( strcat('Appending seqs 5pr: ', cur_5pr_append_seq, ', ' , fivepr_rt_seq))
-    disp(strcat('Appending seqs 3pr: ', threepr_t7_seq , ', ' , cur_3pr_append_seq))
+    disp( strcat('Appending seqs to 5pr of homology region: 5-', cur_5pr_append_seq, '-3',  '5-',fivepr_rt_seq , '-3'))
+    disp(strcat('Appending seqs 3pr of homology region: 5-', threepr_t7_seq ,  '-3' , '5-' , cur_3pr_append_seq , '-3'))
     disp('~~~~~~~~~~~~~~')
 
 end
@@ -124,9 +123,10 @@ end
 
 %% save
 
-saveDir = 'G:\Finn\20240130_HLB_probe_order';
 
-save_name = fullfile(saveDir, strcat( string(datetime('today')), 'full_probe_table_appended.csv') );
+
+
+save_name = fullfile(proj_dir, strcat( string(datetime('today')), 'full_probe_table_appended.csv') );
 
 writetable(output_table, save_name, "Delimiter", ",")
 
